@@ -7,19 +7,19 @@ protocol MeetingProviding {
 }
 
 @MainActor
-final class MeetingStore: ObservableObject {
-    @Published private(set) var meetings: [MeetingLink] = []
-    @Published private(set) var status: MeetingListStatus = .idle
-    @Published private(set) var isRefreshing = false
+final class MeetingStore {
+    private static let minimumRefreshIndicatorDuration: TimeInterval = 0.45
+
+    private(set) var meetings: [MeetingLink] = []
+    private(set) var status: MeetingListStatus = .idle
+    private(set) var isRefreshing = false
+
+    var onChange: (() -> Void)?
 
     private let provider: any MeetingProviding
 
     init(provider: any MeetingProviding) {
         self.provider = provider
-
-        Task {
-            await refresh()
-        }
     }
 
     func refresh() async {
@@ -27,8 +27,11 @@ final class MeetingStore: ObservableObject {
             return
         }
 
+        let refreshStartedAt = Date()
         isRefreshing = true
         status = .loading
+        notify()
+        await Task.yield()
 
         do {
             let fetchedMeetings = try await provider.upcomingMeetingLinksForToday()
@@ -39,10 +42,20 @@ final class MeetingStore: ObservableObject {
             status = .failed(error.localizedDescription)
         }
 
+        let remainingIndicatorTime = Self.minimumRefreshIndicatorDuration - Date().timeIntervalSince(refreshStartedAt)
+        if remainingIndicatorTime > 0 {
+            try? await Task.sleep(nanoseconds: UInt64(remainingIndicatorTime * 1_000_000_000))
+        }
+
         isRefreshing = false
+        notify()
     }
 
     func open(_ meeting: MeetingLink) {
         NSWorkspace.shared.open(meeting.url)
+    }
+
+    private func notify() {
+        onChange?()
     }
 }

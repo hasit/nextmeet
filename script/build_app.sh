@@ -49,13 +49,16 @@ if [[ -f "$ICON_GENERATOR" && ( ! -f "$APP_ICON" || "$ICON_SOURCE" -nt "$APP_ICO
   bash "$ICON_GENERATOR"
 fi
 
-SWIFT_BUILD_ARGS=()
-if [[ "$CONFIGURATION" == "release" ]]; then
-  SWIFT_BUILD_ARGS=(-c release)
-fi
+swift_build() {
+  if [[ "$CONFIGURATION" == "release" ]]; then
+    swift build -c release "$@"
+  else
+    swift build "$@"
+  fi
+}
 
-swift build "${SWIFT_BUILD_ARGS[@]}"
-BUILD_BINARY="$(swift build "${SWIFT_BUILD_ARGS[@]}" --show-bin-path)/$APP_NAME"
+swift_build
+BUILD_BINARY="$(swift_build --show-bin-path)/$APP_NAME"
 
 rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_MACOS" "$APP_RESOURCES"

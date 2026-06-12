@@ -2,9 +2,11 @@ import Foundation
 import ServiceManagement
 
 @MainActor
-final class LaunchAtLoginStore: ObservableObject {
-    @Published private(set) var isEnabled = false
-    @Published private(set) var helpText = "Open NextMeet automatically when you log in."
+final class LaunchAtLoginStore {
+    private(set) var isEnabled = false
+    private(set) var helpText = "Open NextMeet automatically when you log in."
+
+    var onChange: (() -> Void)?
 
     init() {
         refresh()
@@ -31,6 +33,8 @@ final class LaunchAtLoginStore: ObservableObject {
             isEnabled = LegacyLaunchAgent.isInstalled
             helpText = "Uses a user LaunchAgent for this macOS version."
         }
+
+        notify()
     }
 
     func setEnabled(_ enabled: Bool) {
@@ -53,6 +57,10 @@ final class LaunchAtLoginStore: ObservableObject {
         }
 
         refresh()
+    }
+
+    private func notify() {
+        onChange?()
     }
 }
 
