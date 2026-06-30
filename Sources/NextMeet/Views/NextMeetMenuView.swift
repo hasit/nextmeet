@@ -155,7 +155,11 @@ final class NextMeetPopoverViewController: NSViewController {
     }
 
     private func meetingRow(_ meeting: MeetingLink) -> NSView {
-        let row = MenuRowControl(title: meeting.menuTitle, fontWeight: .semibold)
+        let row = MenuRowControl(
+            title: meeting.menuTitle,
+            accessory: meeting.service.menuLabel,
+            fontWeight: .semibold
+        )
         row.toolTip = meeting.helpText
         row.representedObject = meeting
         row.target = self

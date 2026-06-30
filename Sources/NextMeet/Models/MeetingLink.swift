@@ -15,7 +15,8 @@ struct MeetingLink: Identifiable {
 
     var helpText: String {
         let time = MeetingFormatters.helpTime.string(from: startDate)
-        return "\(time) - \(service.displayName) - \(url.absoluteString)"
+        let fallbackTitle = title.isEmpty ? service.displayName : title
+        return "\(time) - \(fallbackTitle) - \(service.displayName)".condensedWhitespace()
     }
 }
 
@@ -38,6 +39,21 @@ enum MeetingService: Int {
             return "Webex"
         case .generic:
             return "Meeting Link"
+        }
+    }
+
+    var menuLabel: String {
+        switch self {
+        case .zoom:
+            return "Zoom"
+        case .googleMeet:
+            return "Meet"
+        case .teams:
+            return "Teams"
+        case .webex:
+            return "Webex"
+        case .generic:
+            return "Link"
         }
     }
 
