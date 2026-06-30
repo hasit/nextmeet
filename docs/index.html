@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NextMeet - Meeting links in your menu bar</title>
+    <meta
+      name="description"
+      content="NextMeet is a small macOS menu bar app that finds today's meeting links in Calendar."
+    >
+    <meta name="theme-color" content="#1d4fd7">
+    <link rel="icon" href="./assets/app-icon.png">
+    <style>
+      :root {
+        color-scheme: dark;
+        --ink: #f7fbff;
+        --muted: rgba(247, 251, 255, 0.7);
+        --popover: rgba(32, 31, 52, 0.9);
+        --line: rgba(255, 255, 255, 0.15);
+        --blue: #0a84ff;
+        --teal: #28d7cc;
+        --shadow: 0 26px 70px rgba(0, 0, 0, 0.32);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        min-height: 100svh;
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        line-height: 1.5;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .desktop {
+        position: relative;
+        min-height: 100svh;
+        overflow: hidden;
+        background:
+          radial-gradient(1300px 760px at 12% 20%, rgba(125, 93, 255, 0.88), transparent 58%),
+          radial-gradient(1000px 680px at 80% 42%, rgba(0, 116, 255, 0.78), transparent 56%),
+          radial-gradient(960px 640px at 62% 88%, rgba(0, 34, 130, 0.92), transparent 62%),
+          linear-gradient(130deg, #08127b 0%, #2c46db 45%, #83a1de 100%);
+      }
+
+      .desktop::before {
+        content: "";
+        position: absolute;
+        inset: -18% -12% auto 14%;
+        height: 90%;
+        border: 3px solid rgba(255, 255, 255, 0.34);
+        border-color: transparent transparent rgba(255, 255, 255, 0.34) transparent;
+        border-radius: 50%;
+        transform: rotate(-11deg);
+        filter: blur(0.5px);
+      }
+
+      .desktop::after {
+        content: "";
+        position: absolute;
+        right: -10%;
+        bottom: -28%;
+        width: 52vw;
+        height: 72vh;
+        border-radius: 45% 0 0 0;
+        background: rgba(196, 211, 244, 0.58);
+        filter: blur(1px);
+      }
+
+      .menubar {
+        position: relative;
+        z-index: 3;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        height: 34px;
+        padding: 0 18px;
+        background: rgba(6, 9, 26, 0.36);
+        backdrop-filter: blur(18px);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 720;
+      }
+
+      .menu-left {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        min-width: 0;
+      }
+
+      .menu-left span {
+        white-space: nowrap;
+      }
+
+      .status-stack {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 11px;
+      }
+
+      .tiny-status {
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 12px;
+        font-weight: 760;
+      }
+
+      .menubar-icon,
+      .nextmeet-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+      }
+
+      .menubar-icon img,
+      .nextmeet-status img {
+        display: block;
+        width: 21px;
+        height: 21px;
+        object-fit: contain;
+        opacity: 0.96;
+        filter: invert(1);
+      }
+
+      .nextmeet-menu {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .tray {
+        position: absolute;
+        top: 36px;
+        right: -92px;
+        width: min(386px, calc(100vw - 36px));
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        background: var(--popover);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(24px);
+        color: #fff;
+      }
+
+      .tray::before {
+        content: "";
+        position: absolute;
+        top: -8px;
+        right: 97px;
+        width: 14px;
+        height: 14px;
+        border-left: 1px solid rgba(255, 255, 255, 0.18);
+        border-top: 1px solid rgba(255, 255, 255, 0.18);
+        background: var(--popover);
+        transform: rotate(45deg);
+      }
+
+      .tray-inner {
+        position: relative;
+        padding: 12px 14px 11px;
+      }
+
+      .meeting-row,
+      .action-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 16px;
+        min-height: 29px;
+        font-size: 14px;
+        font-weight: 760;
+      }
+
+      .meeting-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .meeting-row span:first-child,
+      .action-row span:first-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .shortcut {
+        color: rgba(255, 255, 255, 0.46);
+        font-size: 12px;
+        font-weight: 760;
+      }
+
+      .app-label {
+        color: rgba(255, 255, 255, 0.46);
+        font-size: 12px;
+        font-weight: 760;
+      }
+
+      .separator {
+        height: 1px;
+        margin: 8px 0;
+        background: var(--line);
+      }
+
+      .action-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .glyph {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+      }
+
+      .glyph img {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+        opacity: 0.68;
+        filter: invert(1);
+      }
+
+      .hero-copy {
+        position: relative;
+        z-index: 2;
+        display: grid;
+        align-content: end;
+        width: min(1120px, calc(100% - 56px));
+        min-height: calc(100svh - 34px);
+        margin: 0 auto;
+        padding: 0 0 9vh;
+      }
+
+      .copy-box {
+        max-width: 560px;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(58px, 9vw, 112px);
+        line-height: 0.92;
+        letter-spacing: 0;
+      }
+
+      .tagline {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: clamp(22px, 3vw, 34px);
+        font-weight: 760;
+        line-height: 1.14;
+      }
+
+      .subcopy {
+        max-width: 470px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 16px;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .button,
+      .command {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 760;
+      }
+
+      .button {
+        padding: 0 17px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.92);
+        color: #10191d;
+        text-decoration: none;
+      }
+
+      .command {
+        padding: 0 13px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(10, 15, 26, 0.28);
+        color: rgba(255, 255, 255, 0.82);
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 900px) {
+        .menubar {
+          gap: 12px;
+          padding-inline: 12px;
+        }
+
+        .menu-left span:not(:first-child),
+        .tiny-status.hide-small {
+          display: none;
+        }
+
+        .tray {
+          right: -86px;
+        }
+
+        .hero-copy {
+          min-height: calc(100svh - 34px);
+          padding-bottom: 7vh;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .desktop {
+          overflow: auto;
+        }
+
+        .desktop::before {
+          inset: -12% -50% auto -20%;
+          height: 62%;
+        }
+
+        .desktop::after {
+          display: none;
+        }
+
+        .menubar {
+          height: 38px;
+          font-size: 12px;
+        }
+
+        .menu-left {
+          gap: 10px;
+        }
+
+        .status-stack {
+          gap: 7px;
+        }
+
+        .menubar-icon,
+        .nextmeet-status {
+          width: 22px;
+          height: 22px;
+        }
+
+        .menubar-icon img,
+        .nextmeet-status img {
+          width: 19px;
+          height: 19px;
+        }
+
+        .tray {
+          top: 40px;
+          right: -130px;
+          width: calc(100vw - 24px);
+        }
+
+        .tray::before {
+          right: 135px;
+        }
+
+        .meeting-row,
+        .action-row {
+          font-size: 13px;
+        }
+
+        .hero-copy {
+          width: min(100% - 28px, 1120px);
+          min-height: calc(100svh - 38px);
+          padding-top: 310px;
+          padding-bottom: 36px;
+        }
+
+        h1 {
+          font-size: clamp(56px, 18vw, 82px);
+        }
+
+        .tagline {
+          font-size: 24px;
+        }
+
+        .subcopy {
+          font-size: 15px;
+        }
+
+        .actions {
+          display: grid;
+        }
+
+        .button,
+        .command {
+          width: 100%;
+        }
+
+        .command {
+          justify-content: flex-start;
+          overflow-x: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="desktop">
+      <nav class="menubar" aria-label="Mock macOS menu bar">
+        <div class="menu-left" aria-hidden="true">
+          <span>Finder</span>
+          <span>File</span>
+          <span>Edit</span>
+          <span>View</span>
+          <span>Window</span>
+          <span>Help</span>
+        </div>
+
+        <div class="status-stack">
+          <span class="menubar-icon hide-small" aria-label="Wi-Fi">
+            <img src="./assets/menubar-wifi.png" alt="">
+          </span>
+          <span class="menubar-icon hide-small" aria-label="Battery">
+            <img src="./assets/menubar-battery.png" alt="">
+          </span>
+          <span class="nextmeet-menu">
+            <span class="nextmeet-status" aria-label="NextMeet menu bar icon">
+              <img src="./assets/menubar-calendar.png" alt="">
+            </span>
+
+            <section class="tray" aria-label="NextMeet menu preview">
+              <div class="tray-inner">
+                <div class="meeting-row">
+                  <span>2:30 PM Platform Roadmap Sync</span>
+                  <span class="app-label">Zoom</span>
+                </div>
+                <div class="meeting-row">
+                  <span>3:15 PM Engineering Triage</span>
+                  <span class="app-label">Zoom</span>
+                </div>
+                <div class="meeting-row">
+                  <span>4:00 PM Riverbend Bank Renewal Review</span>
+                  <span class="app-label">Teams</span>
+                </div>
+                <div class="meeting-row">
+                  <span>5:00 PM Atlas Logistics Onboarding</span>
+                  <span class="app-label">Webex</span>
+                </div>
+                <div class="separator"></div>
+                <div class="action-row">
+                  <span class="action-label">
+                    <span class="glyph"><img src="./assets/icon-refresh.png" alt=""></span>
+                    Refresh
+                  </span>
+                  <span class="shortcut">⌘R</span>
+                </div>
+                <div class="action-row">
+                  <span class="action-label">
+                    <span class="glyph"><img src="./assets/icon-launch.png" alt=""></span>
+                    Launch at Startup
+                  </span>
+                  <span class="shortcut">On</span>
+                </div>
+                <div class="action-row">
+                  <span class="action-label">
+                    <span class="glyph"><img src="./assets/icon-quit.png" alt=""></span>
+                    Quit
+                  </span>
+                  <span class="shortcut">⌘Q</span>
+                </div>
+              </div>
+            </section>
+          </span>
+          <span class="tiny-status">Tue Jun 30&nbsp;&nbsp;1:58 PM</span>
+        </div>
+      </nav>
+
+      <section class="hero-copy" aria-label="NextMeet">
+        <div class="copy-box">
+          <h1>NextMeet</h1>
+          <p class="tagline">Today's meeting links, right in the menu bar.</p>
+          <p class="subcopy">
+            A tiny macOS app that reads Calendar, finds join links, and opens
+            the right meeting app when you click.
+          </p>
+          <div class="actions">
+            <a class="button" href="https://github.com/hasit/nextmeet">View on GitHub</a>
+            <code class="command">./script/build_app.sh</code>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

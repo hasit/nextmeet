@@ -1,32 +1,32 @@
 # NextMeet
 
-NextMeet is a macOS menu bar app that reads today's calendar events, finds
-meeting links, and keeps today's joinable meetings one click away.
+NextMeet is a tiny macOS menu bar app for today's meeting links.
 
-The menu contains:
+It reads Calendar events for the current day, finds join links, and opens each
+meeting in the default app for that link.
 
-- Today's remaining meetings with links
-- Refresh
-- Launch at Startup
-- Quit
+## Features
 
-Build a launchable app:
+- Shows today's meeting links in the menu bar
+- Refreshes when the menu opens
+- Opens links for Zoom, Google Meet, Microsoft Teams, Webex, and generic web meetings
+- Supports launch at login
+- Keeps calendar data on your Mac
+
+## Requirements
+
+- macOS 14 or newer
+- Xcode command line tools
+
+## Build
 
 ```bash
 ./script/build_app.sh
 ```
 
-The app bundle is created at `dist/NextMeet.app`. Double-click it to launch.
-Because NextMeet is a menu bar utility, launching it shows the calendar icon in
-the menu bar instead of opening a Dock app window.
+The app bundle is created at `dist/NextMeet.app`.
 
-Regenerate the app icon:
-
-```bash
-./script/generate_app_icon.sh
-```
-
-Build and run for development:
+For local development:
 
 ```bash
 ./script/build_and_run.sh
