@@ -22,11 +22,17 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let popover = NSPopover()
     private let viewController: NextMeetPopoverViewController
+    private let aboutWindowController: AboutWindowController
 
     init(store: MeetingStore, launchAtLoginStore: LaunchAtLoginStore) {
+        let aboutWindowController = AboutWindowController()
+        self.aboutWindowController = aboutWindowController
         viewController = NextMeetPopoverViewController(
             store: store,
-            launchAtLoginStore: launchAtLoginStore
+            launchAtLoginStore: launchAtLoginStore,
+            onShowAbout: { [weak aboutWindowController] in
+                aboutWindowController?.present()
+            }
         )
 
         super.init()

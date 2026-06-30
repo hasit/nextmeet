@@ -4,13 +4,22 @@ import AppKit
 final class NextMeetPopoverViewController: NSViewController {
     private let store: MeetingStore
     private let launchAtLoginStore: LaunchAtLoginStore
+    private let metadata: AppMetadata
+    private let onShowAbout: () -> Void
     private let stackView = NSStackView()
 
     private var keyboardMonitor: Any?
 
-    init(store: MeetingStore, launchAtLoginStore: LaunchAtLoginStore) {
+    init(
+        store: MeetingStore,
+        launchAtLoginStore: LaunchAtLoginStore,
+        metadata: AppMetadata = .current,
+        onShowAbout: @escaping () -> Void
+    ) {
         self.store = store
         self.launchAtLoginStore = launchAtLoginStore
+        self.metadata = metadata
+        self.onShowAbout = onShowAbout
 
         super.init(nibName: nil, bundle: nil)
 
@@ -94,6 +103,7 @@ final class NextMeetPopoverViewController: NSViewController {
         stackView.addArrangedSubview(separator())
         stackView.addArrangedSubview(refreshRow())
         stackView.addArrangedSubview(launchAtStartupRow())
+        stackView.addArrangedSubview(aboutRow())
         stackView.addArrangedSubview(quitRow())
 
         updatePreferredSize()
@@ -191,6 +201,17 @@ final class NextMeetPopoverViewController: NSViewController {
         return row
     }
 
+    private func aboutRow() -> NSView {
+        let row = MenuRowControl(
+            title: "About NextMeet",
+            systemImageName: "info.circle",
+            accessory: metadata.version
+        )
+        row.target = self
+        row.action = #selector(showAbout(_:))
+        return row
+    }
+
     private func quitRow() -> NSView {
         let row = MenuRowControl(title: "Quit", systemImageName: "power", accessory: "⌘Q")
         row.target = self
@@ -246,6 +267,11 @@ final class NextMeetPopoverViewController: NSViewController {
 
     @objc private func toggleLaunchAtStartup(_ sender: MenuRowControl) {
         launchAtLoginStore.setEnabled(!launchAtLoginStore.isEnabled)
+    }
+
+    @objc private func showAbout(_ sender: MenuRowControl) {
+        view.window?.performClose(nil)
+        onShowAbout()
     }
 
     @objc private func quit(_ sender: MenuRowControl) {

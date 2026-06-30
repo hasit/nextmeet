@@ -37,6 +37,7 @@ ICON_GENERATOR="$ROOT_DIR/script/generate_app_icon.sh"
 ICON_SOURCE="$ROOT_DIR/script/generate_app_icon.swift"
 APP_VERSION="${APP_VERSION:-}"
 BUILD_NUMBER="${BUILD_NUMBER:-${GITHUB_RUN_NUMBER:-1}}"
+APP_COMMIT="${APP_COMMIT:-${GITHUB_SHA:-}}"
 CODE_SIGN_IDENTITY="${CODE_SIGN_IDENTITY:--}"
 CODE_SIGN_RUNTIME="${CODE_SIGN_RUNTIME:-0}"
 CODE_SIGN_TIMESTAMP="${CODE_SIGN_TIMESTAMP:-0}"
@@ -47,6 +48,10 @@ fi
 
 if [[ -z "$APP_VERSION" ]]; then
   APP_VERSION="0.1.0"
+fi
+
+if [[ -z "$APP_COMMIT" ]] && command -v git >/dev/null 2>&1; then
+  APP_COMMIT="$(git -C "$ROOT_DIR" rev-parse --short=12 HEAD 2>/dev/null || true)"
 fi
 
 mkdir -p "$MODULE_CACHE_DIR"
@@ -106,6 +111,8 @@ cat >"$INFO_PLIST" <<PLIST
   <string>$APP_VERSION</string>
   <key>CFBundleVersion</key>
   <string>$BUILD_NUMBER</string>
+  <key>NextMeetCommit</key>
+  <string>$APP_COMMIT</string>
   <key>LSMinimumSystemVersion</key>
   <string>$MIN_SYSTEM_VERSION</string>
   <key>LSMultipleInstancesProhibited</key>
