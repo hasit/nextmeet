@@ -26,10 +26,25 @@ jobs:
 
       - name: Read version
         id: version
-        run: echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check for existing version tag
+        id: existing_version
+        env:
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if git ls-remote --exit-code --tags origin "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Version tag $RELEASE_TAG already exists. Skipping release."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Import Developer ID certificate
-        if: ${{ env.APPLE_CERTIFICATE_BASE64 != '' }}
+        if: ${{ steps.existing_version.outputs.exists != 'true' && env.APPLE_CERTIFICATE_BASE64 != '' }}
         run: |
           CERTIFICATE_PATH="$RUNNER_TEMP/developer-id.p12"
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
@@ -53,11 +68,11 @@ jobs:
             "$KEYCHAIN_PATH"
 
       - name: Package unsigned app
-        if: ${{ env.APPLE_CERTIFICATE_BASE64 == '' || env.APPLE_ID == '' || env.APPLE_TEAM_ID == '' || env.APPLE_APP_SPECIFIC_PASSWORD == '' }}
+        if: ${{ steps.existing_version.outputs.exists != 'true' && (env.APPLE_CERTIFICATE_BASE64 == '' || env.APPLE_ID == '' || env.APPLE_TEAM_ID == '' || env.APPLE_APP_SPECIFIC_PASSWORD == '') }}
         run: BUILD_NUMBER="$GITHUB_RUN_NUMBER" ./script/package_release.sh
 
       - name: Package notarized app
-        if: ${{ env.APPLE_CERTIFICATE_BASE64 != '' && env.APPLE_ID != '' && env.APPLE_TEAM_ID != '' && env.APPLE_APP_SPECIFIC_PASSWORD != '' }}
+        if: ${{ steps.existing_version.outputs.exists != 'true' && env.APPLE_CERTIFICATE_BASE64 != '' && env.APPLE_ID != '' && env.APPLE_TEAM_ID != '' && env.APPLE_APP_SPECIFIC_PASSWORD != '' }}
         run: |
           SIGNING_IDENTITY="$APPLE_SIGNING_IDENTITY"
 
@@ -82,10 +97,11 @@ jobs:
             ./script/package_release.sh
 
       - name: Create GitHub release
+        if: ${{ steps.existing_version.outputs.exists != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: v${{ steps.version.outputs.version }}.${{ github.run_number }}
-          RELEASE_TITLE: NextMeet ${{ steps.version.outputs.version }} (${{ github.run_number }})
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_TITLE: NextMeet ${{ steps.version.outputs.version }}
         run: |
           if [[ -f dist/NextMeet.notarized ]]; then
             SIGNING_NOTE="This release is Developer ID signed and notarized."
@@ -96,7 +112,7 @@ jobs:
           fi
 
           cat > release-notes.md <<'NOTES'
-          NextMeet ${{ steps.version.outputs.version }} build ${{ github.run_number }}
+          NextMeet ${{ steps.version.outputs.version }}
 
           Requires macOS 14 or newer.
 
