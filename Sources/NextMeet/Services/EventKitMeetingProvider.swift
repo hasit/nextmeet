@@ -3,11 +3,12 @@ import Foundation
 
 @MainActor
 final class EventKitMeetingProvider: MeetingProviding {
-    private let eventStore = EKEventStore()
     private let parser = MeetingLinkParser()
+    private var eventStore: EKEventStore?
 
     func upcomingMeetingLinksForToday() async throws -> [MeetingLink] {
-        try await ensureCalendarAccess()
+        let eventStore = currentEventStore()
+        try await ensureCalendarAccess(eventStore: eventStore)
 
         let now = Date()
         let calendar = Calendar.current
@@ -52,6 +53,16 @@ final class EventKitMeetingProvider: MeetingProviding {
         return meetings
     }
 
+    private func currentEventStore() -> EKEventStore {
+        if let eventStore {
+            return eventStore
+        }
+
+        let eventStore = EKEventStore()
+        self.eventStore = eventStore
+        return eventStore
+    }
+
     private func searchFields(for event: EKEvent) -> [String] {
         [
             event.url?.absoluteString,
@@ -61,7 +72,7 @@ final class EventKitMeetingProvider: MeetingProviding {
         ].compactMap { $0 }
     }
 
-    private func ensureCalendarAccess() async throws {
+    private func ensureCalendarAccess(eventStore: EKEventStore) async throws {
         switch EKEventStore.authorizationStatus(for: .event) {
         case .authorized, .fullAccess:
             return
