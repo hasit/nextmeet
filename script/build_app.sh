@@ -37,6 +37,9 @@ ICON_GENERATOR="$ROOT_DIR/script/generate_app_icon.sh"
 ICON_SOURCE="$ROOT_DIR/script/generate_app_icon.swift"
 APP_VERSION="${APP_VERSION:-}"
 BUILD_NUMBER="${BUILD_NUMBER:-${GITHUB_RUN_NUMBER:-1}}"
+CODE_SIGN_IDENTITY="${CODE_SIGN_IDENTITY:--}"
+CODE_SIGN_RUNTIME="${CODE_SIGN_RUNTIME:-0}"
+CODE_SIGN_TIMESTAMP="${CODE_SIGN_TIMESTAMP:-0}"
 
 if [[ -z "$APP_VERSION" && -f "$VERSION_FILE" ]]; then
   APP_VERSION="$(tr -d '[:space:]' <"$VERSION_FILE")"
@@ -121,8 +124,18 @@ PLIST
 
 plutil -lint "$INFO_PLIST" >/dev/null
 
-if command -v codesign >/dev/null 2>&1; then
-  codesign --force --sign - "$APP_BUNDLE" >/dev/null
+if [[ -n "$CODE_SIGN_IDENTITY" ]] && command -v codesign >/dev/null 2>&1; then
+  CODESIGN_ARGS=(--force --sign "$CODE_SIGN_IDENTITY")
+
+  if [[ "$CODE_SIGN_RUNTIME" == "1" ]]; then
+    CODESIGN_ARGS+=(--options runtime)
+  fi
+
+  if [[ "$CODE_SIGN_TIMESTAMP" == "1" ]]; then
+    CODESIGN_ARGS+=(--timestamp)
+  fi
+
+  codesign "${CODESIGN_ARGS[@]}" "$APP_BUNDLE" >/dev/null
   codesign --verify --deep --strict "$APP_BUNDLE"
 fi
 

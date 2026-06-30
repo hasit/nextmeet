@@ -12,6 +12,13 @@ jobs:
   release:
     name: Build and release
     runs-on: macos-14
+    env:
+      APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_BASE64 }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
 
     steps:
       - name: Check out repository
@@ -21,8 +28,58 @@ jobs:
         id: version
         run: echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
 
-      - name: Package app
+      - name: Import Developer ID certificate
+        if: ${{ env.APPLE_CERTIFICATE_BASE64 != '' }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+
+          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH"
+
+      - name: Package unsigned app
+        if: ${{ env.APPLE_CERTIFICATE_BASE64 == '' || env.APPLE_ID == '' || env.APPLE_TEAM_ID == '' || env.APPLE_APP_SPECIFIC_PASSWORD == '' }}
         run: BUILD_NUMBER="$GITHUB_RUN_NUMBER" ./script/package_release.sh
+
+      - name: Package notarized app
+        if: ${{ env.APPLE_CERTIFICATE_BASE64 != '' && env.APPLE_ID != '' && env.APPLE_TEAM_ID != '' && env.APPLE_APP_SPECIFIC_PASSWORD != '' }}
+        run: |
+          SIGNING_IDENTITY="$APPLE_SIGNING_IDENTITY"
+
+          if [[ -z "$SIGNING_IDENTITY" ]]; then
+            SIGNING_IDENTITY="$(
+              security find-identity -v -p codesigning \
+                | sed -n 's/.*"\(Developer ID Application:.*\)".*/\1/p' \
+                | head -n 1
+            )"
+          fi
+
+          if [[ -z "$SIGNING_IDENTITY" ]]; then
+            echo "Developer ID Application signing identity not found." >&2
+            exit 1
+          fi
+
+          BUILD_NUMBER="$GITHUB_RUN_NUMBER" \
+            CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
+            CODE_SIGN_RUNTIME=1 \
+            CODE_SIGN_TIMESTAMP=1 \
+            NOTARIZE=1 \
+            ./script/package_release.sh
 
       - name: Create GitHub release
         env:
@@ -30,15 +87,29 @@ jobs:
           RELEASE_TAG: v${{ steps.version.outputs.version }}.${{ github.run_number }}
           RELEASE_TITLE: NextMeet ${{ steps.version.outputs.version }} (${{ github.run_number }})
         run: |
+          if [[ -f dist/NextMeet.notarized ]]; then
+            SIGNING_NOTE="This release is Developer ID signed and notarized."
+            OPEN_NOTE="Open NextMeet normally, then grant Calendar access when macOS asks."
+          else
+            SIGNING_NOTE="This release is not notarized. macOS may show \"NextMeet\" Not Opened."
+            OPEN_NOTE="If blocked, choose Done, then open System Settings > Privacy & Security and click Open Anyway for NextMeet."
+          fi
+
           cat > release-notes.md <<'NOTES'
           NextMeet ${{ steps.version.outputs.version }} build ${{ github.run_number }}
-
-          Download NextMeet.zip, unzip it, move NextMeet.app to Applications, and open it.
 
           Requires macOS 14 or newer.
 
           Commit: ${{ github.sha }}
           NOTES
+
+          {
+            echo
+            echo "$SIGNING_NOTE"
+            echo
+            echo "Download NextMeet.zip, unzip it, move NextMeet.app to Applications, and open it."
+            echo "$OPEN_NOTE"
+          } >> release-notes.md
 
           gh release create "$RELEASE_TAG" \
             dist/NextMeet.zip \

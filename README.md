@@ -31,8 +31,12 @@ To run NextMeet:
 4. Grant Calendar access when macOS asks.
 5. Use the calendar icon in the menu bar.
 
-If macOS blocks the app the first time, Control-click `NextMeet.app` and choose
-Open.
+Current release builds are not notarized unless Apple Developer ID secrets are
+configured in GitHub Actions. If macOS shows `"NextMeet" Not Opened`, choose
+Done, then open System Settings > Privacy & Security and click Open Anyway for
+NextMeet.
+
+Building from source avoids this downloaded-app warning.
 
 ## Build From Source
 
@@ -55,3 +59,13 @@ To create a release ZIP locally:
 ```bash
 ./script/package_release.sh
 ```
+
+To notarize release ZIPs from GitHub Actions, configure these repository
+secrets:
+
+- `APPLE_DEVELOPER_ID_CERTIFICATE_BASE64`
+- `APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD`
+- `APPLE_DEVELOPER_ID_APPLICATION`
+- `APPLE_ID`
+- `APPLE_TEAM_ID`
+- `APPLE_APP_SPECIFIC_PASSWORD`
