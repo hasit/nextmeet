@@ -301,6 +301,10 @@
         color: rgba(255, 255, 255, 0.9);
       }
 
+      .mobile-download-note {
+        display: none;
+      }
+
       .install {
         max-width: 470px;
         margin-top: 22px;
@@ -425,6 +429,20 @@
           width: 100%;
         }
 
+        .download-link {
+          display: none;
+        }
+
+        .mobile-download-note {
+          display: inline-flex;
+          width: 100%;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          background: rgba(255, 255, 255, 0.12);
+          color: rgba(255, 255, 255, 0.74);
+          cursor: default;
+          user-select: none;
+        }
+
         .install {
           margin-top: 18px;
           font-size: 13px;
@@ -521,9 +539,12 @@
           </p>
           <div class="actions">
             <a
-              class="button"
+              class="button download-link"
               href="https://github.com/hasit/nextmeet/releases/latest/download/NextMeet.zip"
             >Download for macOS</a>
+            <span class="button mobile-download-note" aria-disabled="true">
+              Download requires macOS
+            </span>
             <a class="button secondary" href="https://github.com/hasit/nextmeet">View on GitHub</a>
           </div>
           <div class="install" aria-label="System requirements and run instructions">
