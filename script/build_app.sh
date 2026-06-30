@@ -23,6 +23,7 @@ BUNDLE_ID="com.hasit.NextMeet"
 MIN_SYSTEM_VERSION="14.0"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VERSION_FILE="$ROOT_DIR/VERSION"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
 APP_CONTENTS="$APP_BUNDLE/Contents"
@@ -34,6 +35,16 @@ MODULE_CACHE_DIR="$ROOT_DIR/.build/module-cache"
 APP_ICON="$ROOT_DIR/Assets/AppIcon.icns"
 ICON_GENERATOR="$ROOT_DIR/script/generate_app_icon.sh"
 ICON_SOURCE="$ROOT_DIR/script/generate_app_icon.swift"
+APP_VERSION="${APP_VERSION:-}"
+BUILD_NUMBER="${BUILD_NUMBER:-${GITHUB_RUN_NUMBER:-1}}"
+
+if [[ -z "$APP_VERSION" && -f "$VERSION_FILE" ]]; then
+  APP_VERSION="$(tr -d '[:space:]' <"$VERSION_FILE")"
+fi
+
+if [[ -z "$APP_VERSION" ]]; then
+  APP_VERSION="0.1.0"
+fi
 
 mkdir -p "$MODULE_CACHE_DIR"
 export CLANG_MODULE_CACHE_PATH="$MODULE_CACHE_DIR"
@@ -89,9 +100,9 @@ cat >"$INFO_PLIST" <<PLIST
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0</string>
+  <string>$APP_VERSION</string>
   <key>CFBundleVersion</key>
-  <string>1</string>
+  <string>$BUILD_NUMBER</string>
   <key>LSMinimumSystemVersion</key>
   <string>$MIN_SYSTEM_VERSION</string>
   <key>LSMultipleInstancesProhibited</key>

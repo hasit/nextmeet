@@ -278,8 +278,7 @@
         margin-top: 28px;
       }
 
-      .button,
-      .command {
+      .button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -297,13 +296,31 @@
         text-decoration: none;
       }
 
-      .command {
-        padding: 0 13px;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        background: rgba(10, 15, 26, 0.28);
-        color: rgba(255, 255, 255, 0.82);
-        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-        white-space: nowrap;
+      .button.secondary {
+        background: rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .install {
+        max-width: 470px;
+        margin-top: 22px;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 14px;
+      }
+
+      .install p {
+        margin: 0 0 8px;
+        color: rgba(255, 255, 255, 0.86);
+        font-weight: 760;
+      }
+
+      .install ol {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .install li + li {
+        margin-top: 3px;
       }
 
       @media (max-width: 900px) {
@@ -384,7 +401,7 @@
         .hero-copy {
           width: min(100% - 28px, 1120px);
           min-height: calc(100svh - 38px);
-          padding-top: 310px;
+          padding-top: 280px;
           padding-bottom: 36px;
         }
 
@@ -404,14 +421,8 @@
           display: grid;
         }
 
-        .button,
-        .command {
+        .button {
           width: 100%;
-        }
-
-        .command {
-          justify-content: flex-start;
-          overflow-x: auto;
         }
       }
     </style>
@@ -496,8 +507,20 @@
             the right meeting app when you click.
           </p>
           <div class="actions">
-            <a class="button" href="https://github.com/hasit/nextmeet">View on GitHub</a>
-            <code class="command">./script/build_app.sh</code>
+            <a
+              class="button"
+              href="https://github.com/hasit/nextmeet/releases/latest/download/NextMeet.zip"
+            >Download for macOS</a>
+            <a class="button secondary" href="https://github.com/hasit/nextmeet">View on GitHub</a>
+          </div>
+          <div class="install" aria-label="System requirements and run instructions">
+            <p>Requires macOS 14 or newer.</p>
+            <ol>
+              <li>Unzip the download and move NextMeet to Applications.</li>
+              <li>Open it and grant Calendar access.</li>
+              <li>Use the calendar icon in the menu bar.</li>
+              <li>If macOS warns, Control-click and choose Open.</li>
+            </ol>
           </div>
         </div>
       </section>

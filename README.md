@@ -16,9 +16,27 @@ meeting in the default app for that link.
 ## Requirements
 
 - macOS 14 or newer
-- Xcode command line tools
 
-## Build
+## Download
+
+Download the latest release:
+
+https://github.com/hasit/nextmeet/releases/latest/download/NextMeet.zip
+
+To run NextMeet:
+
+1. Unzip `NextMeet.zip`.
+2. Move `NextMeet.app` to Applications.
+3. Open NextMeet.
+4. Grant Calendar access when macOS asks.
+5. Use the calendar icon in the menu bar.
+
+If macOS blocks the app the first time, Control-click `NextMeet.app` and choose
+Open.
+
+## Build From Source
+
+Requires Xcode command line tools.
 
 ```bash
 ./script/build_app.sh
@@ -30,4 +48,10 @@ For local development:
 
 ```bash
 ./script/build_and_run.sh
+```
+
+To create a release ZIP locally:
+
+```bash
+./script/package_release.sh
 ```
