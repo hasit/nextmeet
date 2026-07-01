@@ -26,9 +26,15 @@ final class EventKitMeetingProvider: MeetingProviding {
             }
 
         var meetings: [MeetingLink] = []
+        var seenMeetingKeys = Set<String>()
 
         for event in events {
             guard let parsedLink = parser.bestLink(in: searchFields(for: event)) else {
+                continue
+            }
+
+            let duplicateKey = meetingDuplicateKey(startDate: event.startDate, url: parsedLink.url)
+            guard seenMeetingKeys.insert(duplicateKey).inserted else {
                 continue
             }
 
@@ -51,6 +57,14 @@ final class EventKitMeetingProvider: MeetingProviding {
         }
 
         return meetings
+    }
+
+    private func meetingDuplicateKey(startDate: Date, url: URL) -> String {
+        let startMinute = Int((startDate.timeIntervalSince1970 / 60).rounded())
+        return [
+            String(startMinute),
+            url.absoluteString.lowercased()
+        ].joined(separator: "|")
     }
 
     private func currentEventStore() -> EKEventStore {
