@@ -9,6 +9,7 @@ meeting in the default app for that link.
 
 - Shows today's meeting links in the menu bar
 - Refreshes when the menu opens
+- Sends opt-in macOS notifications before upcoming meetings
 - Opens links for Zoom, Google Meet, Microsoft Teams, Webex, and generic web meetings
 - Supports launch at login
 - Keeps calendar data on your Mac
@@ -30,6 +31,10 @@ To run NextMeet:
 3. Open NextMeet.
 4. Grant Calendar access when macOS asks.
 5. Use the calendar icon in the menu bar.
+6. Turn on Meeting Alerts if you want a notification before each meeting.
+
+Meeting Alerts work best with Launch at Startup enabled so NextMeet is already
+running before your first meeting of the day.
 
 Current release builds are not notarized unless Apple Developer ID secrets are
 configured in GitHub Actions. If macOS shows `"NextMeet" Not Opened`, choose

@@ -17,6 +17,7 @@ final class MeetingStore {
     var onChange: (() -> Void)?
 
     private let provider: any MeetingProviding
+    private var observers: [UUID: () -> Void] = [:]
 
     init(provider: any MeetingProviding) {
         self.provider = provider
@@ -55,7 +56,21 @@ final class MeetingStore {
         NSWorkspace.shared.open(meeting.url)
     }
 
+    @discardableResult
+    func addObserver(_ observer: @escaping () -> Void) -> UUID {
+        let id = UUID()
+        observers[id] = observer
+        return id
+    }
+
+    func removeObserver(id: UUID) {
+        observers.removeValue(forKey: id)
+    }
+
     private func notify() {
         onChange?()
+        observers.values.forEach { observer in
+            observer()
+        }
     }
 }

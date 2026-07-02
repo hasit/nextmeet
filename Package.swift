@@ -14,7 +14,8 @@ let package = Package(
         .executableTarget(
             name: "NextMeet",
             linkerSettings: [
-                .linkedFramework("EventKit")
+                .linkedFramework("EventKit"),
+                .linkedFramework("UserNotifications")
             ]
         )
     ]

@@ -4,6 +4,7 @@ import AppKit
 final class NextMeetPopoverViewController: NSViewController {
     private let store: MeetingStore
     private let launchAtLoginStore: LaunchAtLoginStore
+    private let reminderPreferencesStore: ReminderPreferencesStore
     private let metadata: AppMetadata
     private let onShowAbout: () -> Void
     private let stackView = NSStackView()
@@ -13,11 +14,13 @@ final class NextMeetPopoverViewController: NSViewController {
     init(
         store: MeetingStore,
         launchAtLoginStore: LaunchAtLoginStore,
+        reminderPreferencesStore: ReminderPreferencesStore,
         metadata: AppMetadata = .current,
         onShowAbout: @escaping () -> Void
     ) {
         self.store = store
         self.launchAtLoginStore = launchAtLoginStore
+        self.reminderPreferencesStore = reminderPreferencesStore
         self.metadata = metadata
         self.onShowAbout = onShowAbout
 
@@ -27,6 +30,9 @@ final class NextMeetPopoverViewController: NSViewController {
             self?.reloadContent()
         }
         launchAtLoginStore.onChange = { [weak self] in
+            self?.reloadContent()
+        }
+        reminderPreferencesStore.addObserver { [weak self] in
             self?.reloadContent()
         }
     }
@@ -102,6 +108,7 @@ final class NextMeetPopoverViewController: NSViewController {
 
         stackView.addArrangedSubview(separator())
         stackView.addArrangedSubview(refreshRow())
+        stackView.addArrangedSubview(meetingAlertsRow())
         stackView.addArrangedSubview(launchAtStartupRow())
         stackView.addArrangedSubview(aboutRow())
         stackView.addArrangedSubview(quitRow())
@@ -201,6 +208,18 @@ final class NextMeetPopoverViewController: NSViewController {
         return row
     }
 
+    private func meetingAlertsRow() -> NSView {
+        let row = MenuRowControl(
+            title: "Meeting Alerts",
+            systemImageName: "bell.badge",
+            accessory: reminderPreferencesStore.menuAccessory
+        )
+        row.toolTip = reminderPreferencesStore.helpText
+        row.target = self
+        row.action = #selector(toggleMeetingAlerts(_:))
+        return row
+    }
+
     private func aboutRow() -> NSView {
         let row = MenuRowControl(
             title: "About NextMeet",
@@ -267,6 +286,10 @@ final class NextMeetPopoverViewController: NSViewController {
 
     @objc private func toggleLaunchAtStartup(_ sender: MenuRowControl) {
         launchAtLoginStore.setEnabled(!launchAtLoginStore.isEnabled)
+    }
+
+    @objc private func toggleMeetingAlerts(_ sender: MenuRowControl) {
+        reminderPreferencesStore.setEnabled(!reminderPreferencesStore.isEnabled)
     }
 
     @objc private func showAbout(_ sender: MenuRowControl) {

@@ -10,9 +10,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
+        let meetingStore = MeetingStore(provider: EventKitMeetingProvider())
+        let launchAtLoginStore = LaunchAtLoginStore()
+        let reminderPreferencesStore = ReminderPreferencesStore()
+        let reminderController = MeetingReminderController(
+            store: meetingStore,
+            preferencesStore: reminderPreferencesStore,
+            scheduler: MeetingReminderScheduler()
+        )
+
         statusItemController = StatusItemController(
-            store: MeetingStore(provider: EventKitMeetingProvider()),
-            launchAtLoginStore: LaunchAtLoginStore()
+            store: meetingStore,
+            launchAtLoginStore: launchAtLoginStore,
+            reminderPreferencesStore: reminderPreferencesStore,
+            reminderController: reminderController
         )
     }
 }
@@ -23,13 +34,21 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     private let popover = NSPopover()
     private let viewController: NextMeetPopoverViewController
     private let aboutWindowController: AboutWindowController
+    private let reminderController: MeetingReminderController
 
-    init(store: MeetingStore, launchAtLoginStore: LaunchAtLoginStore) {
+    init(
+        store: MeetingStore,
+        launchAtLoginStore: LaunchAtLoginStore,
+        reminderPreferencesStore: ReminderPreferencesStore,
+        reminderController: MeetingReminderController
+    ) {
         let aboutWindowController = AboutWindowController()
         self.aboutWindowController = aboutWindowController
+        self.reminderController = reminderController
         viewController = NextMeetPopoverViewController(
             store: store,
             launchAtLoginStore: launchAtLoginStore,
+            reminderPreferencesStore: reminderPreferencesStore,
             onShowAbout: { [weak aboutWindowController] in
                 aboutWindowController?.present()
             }
@@ -56,6 +75,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         popover.contentSize = NSSize(width: 390, height: 140)
         popover.contentViewController = viewController
         popover.delegate = self
+
+        reminderController.start()
     }
 
     @objc private func togglePopover() {
