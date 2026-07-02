@@ -53,8 +53,12 @@ final class MeetingReminderController {
             object: nil,
             queue: .main
         ) { [weak self] _ in
+            guard let controller = self else {
+                return
+            }
+
             Task { @MainActor in
-                self?.refreshAfterCalendarChange()
+                controller.refreshAfterCalendarChange()
             }
         }
 
