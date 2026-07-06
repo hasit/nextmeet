@@ -139,6 +139,7 @@ final class MeetingReminderScheduler: NSObject, UNUserNotificationCenterDelegate
             identifier: Self.categoryIdentifier,
             actions: [joinAction],
             intentIdentifiers: [],
+            hiddenPreviewsBodyPlaceholder: "Meeting starts soon",
             options: []
         )
 
@@ -168,9 +169,8 @@ final class MeetingReminderScheduler: NSObject, UNUserNotificationCenterDelegate
         triggerInterval: TimeInterval
     ) -> UNNotificationRequest {
         let content = UNMutableNotificationContent()
-        content.title = "Meeting starts \(leadTimeTitle(leadTime))"
-        content.body = meeting.title
-        content.subtitle = MeetingFormatters.menuTime.string(from: meeting.startDate)
+        content.title = notificationTitle(for: meeting)
+        content.body = "\(meeting.service.displayName) - starts \(leadTimeTitle(leadTime))"
         content.sound = .default
         content.categoryIdentifier = Self.categoryIdentifier
         content.threadIdentifier = "NextMeetMeetingReminders"
@@ -184,6 +184,15 @@ final class MeetingReminderScheduler: NSObject, UNUserNotificationCenterDelegate
         )
 
         return UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+    }
+
+    private func notificationTitle(for meeting: MeetingLink) -> String {
+        let time = MeetingFormatters.menuTime.string(from: meeting.startDate)
+        let title = (meeting.title.isEmpty ? meeting.service.displayName : meeting.title)
+            .condensedWhitespace()
+            .truncatedForMenu(maxLength: 48)
+
+        return "\(time) \(title)"
     }
 
     private func leadTimeTitle(_ leadTime: TimeInterval) -> String {
